@@ -108,7 +108,7 @@ def export_wiki(wiki_title, wiki_page_url, dir):
         os.makedirs(dir)
 
     export_url = "%s/spaces/flyingpdf/pdfpageexport.action?pageId=%s" % parse_host_pageId_fromurl(wiki_page_url)
-    save_file(export_url, dir + "/" + wiki_title + ".pdf")
+    save_file(export_url, dir + "/" + wiki_title.replace('/','／') + ".pdf")
 
     subpages = get_sub_pages_url(wiki_page_url)
     if subpages :
