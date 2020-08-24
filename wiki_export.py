@@ -4,8 +4,13 @@ import logging
 import requests
 import os
 import time
-import urlparse
+# import urlparse
+from urllib.parse import urlparse
+from urllib.parse import urlsplit
+from urllib import parse
 from pyquery import PyQuery as pq
+import re
+
 
 def generateHeaders():
     headersBrower = '''
@@ -27,7 +32,7 @@ User-Agent:Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko
 
 # 如果wiki需要登录验证,先用浏览器访问wiki,登录以后,获取该用户的cookie信息. cookie信息一般包含JSESSIONID
 def genereateCookies():
-    cookieString = "JSESSIONID=111111111111111111111111111;"
+    cookieString = "_ga=G;"
     cookieMap1 = {}
     for item in cookieString.split(";"):
         item = str.strip(item)
@@ -36,6 +41,7 @@ def genereateCookies():
             cookieMap1[str.strip(key)] = str.strip(value)
 
     return cookieMap1
+
 
 
 def save_file(url, path):
@@ -47,7 +53,7 @@ def save_file(url, path):
 
     logging.debug("start get " + url)
 
-    resp = requests.get(url, timeout=10, headers=generateHeaders(), cookies=genereateCookies(), stream=True)
+    resp = requests.get(url, timeout=1000, headers=generateHeaders(), cookies=genereateCookies(), stream=True,verify=False)
 
     if resp.status_code  == 200:
 
@@ -66,23 +72,44 @@ def save_file(url, path):
         print("error ", resp.status_code)
 
 def parse_host_pageId_fromurl(url):
-    r = urlparse.urlsplit(url)
+    # r = urlsplit(url)
 
-    if r.port == None :
-        host = r.scheme + "://" + r.netloc
-    else :
-        host = r.scheme + "://" + r.netloc + ":" + r.port
+    # # print(type(r.scheme),type(r.netloc),type(r.port))
 
-    params=urlparse.parse_qs(r.query,True)
-    pageId = params["pageId"]
+    # # if r.port == None :
+    # host = r.scheme + "://" + r.netloc
+    # # else :
+    #     # host = r.scheme + "://" + r.netloc + ":" + str(r.port)
 
-    return (host, pageId[0])
+    # params=parse.parse_qs(r.query,True)
+    # print(params)
+    # pageId = params["pageId"]
+
+    # return (host, pageId[0])
+
+    print("!!!parse:",url)
+    r = urlsplit(url)
+    host = r.scheme + "://" + r.netloc
+    resp = requests.get(url, timeout=1000, headers=generateHeaders(), cookies=genereateCookies(), stream=True,verify=False)
+    if resp.status_code == 200:
+        reg=re.compile(r"(?<=pdfpageexport.action\?pageId=)\d+")
+        match=reg.search(resp.text)
+        if match:
+            print("ID:",match.group(0))
+            return (host,match.group(0))
+            
+
+    print("error ", "cannot find pageID for download in url:", url )
+    return 
+
 
 
 def get_sub_pages_url(parentUrl):
+    print("!!!parentUrl",parentUrl)
 
     url = "%s/plugins/pagetree/naturalchildren.action?decorator=none&excerpt=false&sort=position&reverse=false&disableLinks=false&expandCurrent=false&hasRoot=true&pageId=%s&treeId=0&startDepth=0" % parse_host_pageId_fromurl(parentUrl)
-    resp = requests.get(url, timeout=10, headers=generateHeaders(), cookies=genereateCookies(), stream=True)
+    print("!!!get_sub_pages_url",url)
+    resp = requests.get(url, timeout=1000, headers=generateHeaders(), cookies=genereateCookies(), stream=True,verify=False)
 
     if resp.status_code == 200:
         doc = pq(resp.text)
@@ -93,9 +120,9 @@ def get_sub_pages_url(parentUrl):
             if a.attr("href") and text:
                 links.append({
                     "title" : text.encode("utf-8"),
-                    "href" : urlparse.urljoin(parentUrl, a.attr("href"))
+                    "href" : parse.urljoin(parentUrl, a.attr("href"))
                 })
-
+        print("links:",links)
         return links
 
     else :
@@ -103,27 +130,32 @@ def get_sub_pages_url(parentUrl):
 
     return []
 
+def validateTitle(title):
+    rstr = r"[\/\\\:\*\?\"\<\>\|]"  # '/ \ : * ? " < > |'
+    new_title = re.sub(rstr, "_", title)  # 替换为下划线
+    return new_title
+
 def export_wiki(wiki_title, wiki_page_url, dir):
     if not os.path.exists(dir):
         os.makedirs(dir)
 
+    print("!!!Export:",wiki_page_url)
     export_url = "%s/spaces/flyingpdf/pdfpageexport.action?pageId=%s" % parse_host_pageId_fromurl(wiki_page_url)
+    print(dir,'',wiki_title)
+    wiki_title=validateTitle(wiki_title)
     save_file(export_url, dir + "/" + wiki_title + ".pdf")
 
     subpages = get_sub_pages_url(wiki_page_url)
     if subpages :
         parentdir = dir + "/" + wiki_title
         for subpage in subpages :
-            export_wiki(subpage["title"], subpage["href"], parentdir)
+            export_wiki(str(subpage["title"],encoding = "utf8"), subpage["href"], parentdir)
 
 
 logging.basicConfig(level=logging.DEBUG)
 
 # 请先修改generateHeaders和genereateCookies方法的配置
-wiki_page_url = "http://wiki.host/pages/viewpage.action?pageId=126531340"
-wiki_title = "08.工作总结"
-dir = "/tmp"
+wiki_page_url = "https://confluence.cis.unimelb.edu.au:8443/display/SWEN900132019IC/05+Product+Manuals"
+wiki_title = "555"
+dir = "."
 export_wiki(wiki_title, wiki_page_url, dir)
-
-
-
