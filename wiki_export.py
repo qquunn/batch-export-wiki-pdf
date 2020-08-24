@@ -32,7 +32,7 @@ User-Agent:Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko
 
 # 如果wiki需要登录验证,先用浏览器访问wiki,登录以后,获取该用户的cookie信息. cookie信息一般包含JSESSIONID
 def genereateCookies():
-    cookieString = "_ga=G;"
+    cookieString = "_ga=GA1.3.273810098.1586630235;_gid=GA1.3.675279261.1597723624;experimentation_subject_id=IjkzMDdhNzNjLTAzMDktNGUzMS1hYzU1LTI0NjRjY2E4MjYyNyI%3D--f002c85e1db2fefbd3d550a15109d30479a5d6a0;confluence.browse.space.cookie=space-attachments;confluence.last-web-item-clicked=system.space.tools%2Fcontenttools%2Fbrowse;confluence.list.pages.cookie=list-content-tree;JSESSIONID=3FC4541A6670C36CFEE6F224599B3A72;mywork.tab.tasks=false;seraph.confluence=62096200%3A3e0667e29c8765815702b7d6f9c4bcf7370fd60f;"
     cookieMap1 = {}
     for item in cookieString.split(";"):
         item = str.strip(item)
@@ -155,7 +155,7 @@ def export_wiki(wiki_title, wiki_page_url, dir):
 logging.basicConfig(level=logging.DEBUG)
 
 # 请先修改generateHeaders和genereateCookies方法的配置
-wiki_page_url = "https://confluence.cis.unimelb.edu.au:8443/display/SWEN900132019IC/05+Product+Manuals"
-wiki_title = "555"
+wiki_page_url = "http://wiki.host/pages/viewpage.action?pageId=126531340"
+wiki_title = "08.工作总结"
 dir = "."
 export_wiki(wiki_title, wiki_page_url, dir)
